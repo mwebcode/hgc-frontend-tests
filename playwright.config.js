@@ -19,6 +19,7 @@ module.exports = defineConfig({
     trace: 'on',
     video: 'on',
     screenshot: 'on',
+    fullPage: true,
     viewport: { width: 1920, height: 1080 },
   },
 
