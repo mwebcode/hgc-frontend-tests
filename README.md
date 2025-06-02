@@ -1,213 +1,258 @@
 # HGC Frontend Tests
 
-Automated testing suite for Mweb fibre pricing verification on production website using Playwright.
+Multi-brand automated testing suite for frontend pricing verification using Playwright.
 
 ## Overview
 
-This test suite verifies that Mweb's latest pricing changes are correctly reflected on the production website for both Evotel and Zoom fibre providers. The tests navigate through the actual user journey from address search to pricing verification.
+This test suite verifies that pricing changes are correctly reflected on brand websites. It supports multiple brands with separate test configurations:
 
-## Features
+- **Mweb** - Fibre and LTE pricing verification 
+- **WebAfrica** - (Future implementation)
 
-- ✅ **Google Places Integration** - Automated address selection using real Google Places autocomplete
-- ✅ **Pricing Verification** - Validates both promotional and original pricing with strikethrough detection
-- ✅ **Visual Documentation** - Full-page screenshots and video recordings for debugging
-- ✅ **Detailed Reporting** - Comprehensive test reports with pricing mismatch analysis
-- ✅ **Multiple Providers** - Supports Evotel and Zoom with easy extensibility for new providers
+## Project Structure
 
-## Quick Start
+```
+hgc-frontend-tests/
+├── brands/
+│   ├── mweb/                    # Mweb-specific tests and data
+│   │   ├── config/
+│   │   │   ├── test-data/       # Test addresses and pricing data
+│   │   │   └── selectors.js     # Mweb-specific selectors
+│   │   ├── tests/               # Mweb test files
+│   │   └── utils/               # Mweb helper functions
+│   └── webafrica/               # WebAfrica tests (future)
+│       ├── config/
+│       ├── tests/
+│       └── utils/
+├── shared/                      # Shared utilities across brands
+│   ├── utils/                   # Common helper functions
+│   └── types/                   # Shared type definitions
+└── test-results/                # Brand-specific test outputs
+    ├── mweb/
+    └── webafrica/
+```
 
-### Prerequisites
+## Prerequisites
 
-- Node.js (version 16 or higher)
-- Git
+- Node.js (v16 or higher)
+- npm or yarn package manager
 
-### Installation
+## Installation
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/mwebcode/hgc-frontend-tests.git
-   cd hgc-frontend-tests
-   ```
-
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-
-3. **Install Playwright browsers:**
-   ```bash
-   npx playwright install
-   ```
-
-### Running Tests
-
-#### Run all pricing verification tests:
+1. Clone the repository:
 ```bash
+git clone https://github.com/mwebcode/hgc-frontend-tests.git
+cd hgc-frontend-tests
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Install Playwright browsers:
+```bash
+npx playwright install
+```
+
+## Test Execution
+
+### Run All Tests
+```bash
+# Run all Mweb tests on production
+npx playwright test --project=mweb-prod-chrome
+
+# Run all Mweb tests on development
+npx playwright test --project=mweb-dev-chrome
+
+# Run all brands (when available)
 npx playwright test
 ```
 
-#### Run tests against production:
+### Run Specific Tests
 ```bash
-npx playwright test --project=prod-chrome
+# Run only Mweb fibre pricing tests
+npx playwright test pricing-verification --project=mweb-prod-chrome
+
+# Run only Mweb LTE pricing tests  
+npx playwright test lte-pricing-verification --project=mweb-prod-chrome
+
+# Run with headed browser (visible)
+npx playwright test --project=mweb-prod-chrome --headed
+
+# Run specific test by name
+npx playwright test "Verify Evotel fibre pricing" --project=mweb-prod-chrome
 ```
 
-#### Run specific provider tests:
+### Debug Mode
 ```bash
-# Evotel pricing verification
-npx playwright test --grep "Evotel"
+# Run tests in debug mode with browser visible
+npx playwright test --project=mweb-prod-chrome --headed --debug
 
-# Zoom pricing verification  
-npx playwright test --grep "Zoom"
+# Run single test with step-by-step debugging
+npx playwright test pricing-verification.spec.js --project=mweb-prod-chrome --debug
 ```
 
-#### Run with visual output:
-```bash
-npx playwright test --headed
-```
+## Brand-Specific Information
 
-#### Generate and view test report:
+### Mweb Tests
+
+**Test Files:**
+- `brands/mweb/tests/pricing-verification.spec.js` - Fibre pricing verification
+- `brands/mweb/tests/lte-pricing-verification.spec.js` - LTE pricing verification
+- `brands/mweb/tests/homepage.spec.js` - Basic homepage smoke test
+
+**Configuration:**
+- `brands/mweb/config/test-data/fibre-provider-addresses.md` - Fibre test addresses
+- `brands/mweb/config/test-data/lte-provider-addresses.md` - LTE test addresses
+- `brands/mweb/config/test-data/pricing-data/` - Pricing reference files
+
+**Test Coverage:**
+
+*Fibre Tests:*
+- **Evotel Provider** (Krugersdorp): 9 packages from 30Mbps to 500Mbps
+- **Zoom Provider** (Pietermaritzburg): 6 packages from 20Mbps to 850Mbps
+
+*LTE Tests:*
+- **Telkom Provider** (Cape Town): 7 packages including data (40GB-2TB) and uncapped (20-30Mbps)
+
+### WebAfrica Tests
+
+WebAfrica test implementation is planned for future development. The structure is prepared in `brands/webafrica/` with placeholder files.
+
+## Shared Utilities
+
+### Common Functions
+- `shared/utils/common-helpers.js` - Cross-brand helper functions
+- `shared/utils/timeouts.js` - Centralized timeout configurations
+
+### Key Features
+- Address input handling with Google Places autocomplete
+- Price verification with fallback search strategies
+- Screenshot and debugging utilities
+- Package detection with multiple format support
+
+## Reports and Debugging
+
+### View Test Reports
 ```bash
+# Open HTML report after test run
 npx playwright show-report
+
+# Generate and open report for specific brand
+npx playwright test --project=mweb-prod-chrome && npx playwright show-report
 ```
 
-## Test Configuration
-
-### Available Projects
-- **prod-chrome** - Tests against production (https://mweb.co.za/)
-- **dev-chrome** - Tests against development (https://dev.mwebaws.co.za/)
-
-### Timeout Configuration
-Tests use configurable timeouts defined in the test files:
-- Navigation: 90 seconds
-- Content loading: 30 seconds
-- Element visibility: 10 seconds
-
-## Test Coverage
-
-### Evotel Packages (Krugersdorp Address)
-- 20↑20Mbps: R559pm (was R659pm)
-- 60↑60Mbps: R709pm (was R809pm)
-- 150↑150Mbps: R869pm (was R969pm)
-- 250↑250Mbps: R1039pm (was R1139pm)
-- 300↑300Mbps: R1269pm (was R1369pm)
-- 850↑850Mbps: R1349pm (was R1449pm)
-
-### Zoom Packages (Pietermaritzburg Address)
-- 30↑30Mbps: R335pm (was R485pm)
-- 50↑50Mbps: R545pm (was R695pm)
-- 100↑100Mbps: R769pm (was R919pm)
-- 200↑200Mbps: R889pm (was R1039pm)
-- 500↑250Mbps: R1059pm (was R1209pm)
-- 1Gbps↑500Mbps: R1209pm (was R1359pm)
-
-## Debugging
-
-### Screenshots and Videos
-- Screenshots are automatically captured for all test runs
-- Videos are recorded for failed tests
-- Files are saved in `test-results/` directory
-
-### Traces
-- Detailed execution traces are captured for debugging
-- View traces with: `npx playwright show-trace test-results/.../trace.zip`
-
-### Verbose Output
-```bash
-npx playwright test --reporter=list
-```
+### Test Artifacts
+Tests generate brand-specific artifacts:
+- **Screenshots** - Full page screenshots in `test-results/[brand]/`
+- **Videos** - Complete test execution recordings  
+- **Trace files** - Detailed execution traces with network activity
+- **Console logs** - Step-by-step execution details
 
 ## CI/CD Integration
 
 ### GitHub Actions Example
 ```yaml
-name: Pricing Verification Tests
-on: [push, pull_request, schedule]
+name: Multi-Brand Frontend Tests
+on: [push, pull_request]
 jobs:
-  test:
+  test-mweb:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: 18
-      - run: npm ci
+          node-version: '18'
+      - run: npm install
       - run: npx playwright install --with-deps
-      - run: npx playwright test --project=prod-chrome
+      - run: npx playwright test --project=mweb-prod-chrome
       - uses: actions/upload-artifact@v3
         if: always()
         with:
-          name: test-results
-          path: test-results/
+          name: mweb-test-results
+          path: test-results/mweb/
 ```
 
-### Scheduled Monitoring
-Run tests on a schedule to monitor pricing changes:
-```yaml
-on:
-  schedule:
-    - cron: '0 9 * * *'  # Daily at 9 AM
+### Project Configuration
+
+Projects are defined in `playwright.config.js`:
+- `mweb-prod-chrome` - Mweb production testing
+- `mweb-dev-chrome` - Mweb development testing  
+- `webafrica-prod-chrome` - WebAfrica production (future)
+
+Each project has its own:
+- Test directory (`testDir`)
+- Output directory (`outputDir`)
+- Base URL configuration
+
+## Adding New Brands
+
+To add a new brand:
+
+1. Create brand directory structure:
+```bash
+mkdir -p brands/newbrand/{config/test-data/pricing-data,tests,utils}
 ```
 
-## Adding New Providers
+2. Add brand-specific files:
+- `brands/newbrand/config/selectors.js` - Brand selectors
+- `brands/newbrand/utils/newbrand-helpers.js` - Helper functions
+- `brands/newbrand/tests/` - Test files
 
-To add a new provider, update the test file with:
-
-1. **Add expected pricing array:**
+3. Update `playwright.config.js`:
 ```javascript
-const newProviderExpectedPricing = [
-  { package: '50↑50Mbps', dealPrice: 'R699pm', originalPrice: 'R799pm' },
-  // ... more packages
-];
+{
+  name: 'newbrand-prod-chrome',
+  testDir: './brands/newbrand/tests',
+  outputDir: './test-results/newbrand',
+  use: { 
+    ...devices['Desktop Chrome'],
+    baseURL: 'https://newbrand.co.za/',
+  },
+}
 ```
 
-2. **Add test configuration:**
-```javascript
-test('Verify NewProvider pricing at TestCity address', async ({ page }) => {
-  await verifyProviderPricing(page, {
-    providerName: 'NewProvider',
-    addressToType: 'Test Street Address',
-    locationFilters: {
-      primary: 'Test Street',
-      secondary: 'TestCity'
-    },
-    expectedPricing: newProviderExpectedPricing,
-    screenshotPath: 'newprovider-pricing-verification.png'
-  });
-});
+4. Create test results directory:
+```bash
+mkdir test-results/newbrand
 ```
 
 ## Troubleshooting
 
 ### Common Issues
 
-**Test timeouts:**
-- Increase timeouts in the TIMEOUTS configuration
-- Check network connectivity to mweb.co.za
+**Tests timing out during address selection:**
+- Ensure Google Places API is working
+- Check if address suggestions appear in dropdown
+- Verify network connectivity
 
-**Address selection fails:**
-- Verify Google Places suggestions are loading
-- Check address spelling and location filters
+**Pricing not found:**
+- Check if packages are available at test location
+- Verify pricing data is current in `brands/[brand]/config/test-data/pricing-data/`
+- Look for provider availability at address
 
-**Pricing mismatches:**
-- Review screenshots in test-results/
-- Check if prices have changed on the website
-- Update expected pricing arrays if needed
+**Navigation failures:**
+- Confirm base URL is accessible in playwright.config.js
+- Check for website maintenance or outages
+- Verify redirect behavior to choose-a-plan pages
 
-### Getting Help
-
-1. Check the test report: `npx playwright show-report`
-2. Review screenshots and videos in `test-results/`
-3. Run with verbose output: `npx playwright test --reporter=list`
-4. Open browser in headed mode: `npx playwright test --headed`
+### Brand-Specific Debugging
+- Check brand-specific selectors in `brands/[brand]/config/selectors.js`
+- Review brand helper functions in `brands/[brand]/utils/`
+- Verify test data in `brands/[brand]/config/test-data/`
 
 ## Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests to ensure they pass
-5. Submit a pull request
+2. Create a feature branch: `git checkout -b feature-name`
+3. Make your changes following the brand structure
+4. Add tests for new functionality
+5. Run the test suite: `npm test`
+6. Commit your changes: `git commit -m 'Add feature'`
+7. Push to the branch: `git push origin feature-name`
+8. Submit a pull request
 
 ## License
 
-This project is part of the Mweb testing infrastructure.
+This project is licensed under the MIT License.
