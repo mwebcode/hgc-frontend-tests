@@ -11,7 +11,8 @@ module.exports = defineConfig({
   use: {
     trace: 'on',
     video: 'on',
-    screenshot: 'only-on-failure',
+    screenshot: 'on',
+    viewport: { width: 1920, height: 1080 },
   },
 
   projects: [

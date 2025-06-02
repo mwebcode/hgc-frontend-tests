@@ -61,7 +61,11 @@ test.describe('Mweb Fibre Pricing Verification - June 2025 Updates', () => {
     await page.waitForSelector('text=/R[0-9,]+pm/', { timeout: 30000 });
     console.log('✅ Pricing content loaded');
     
-    await page.screenshot({ path: 'evotel-pricing-verification.png', fullPage: true });
+    await page.screenshot({ 
+      path: 'evotel-pricing-verification.png', 
+      fullPage: true,
+      animations: 'disabled'
+    });
     
     // Debug: Show all text that contains Mbps
     const allMbpsText = await page.locator('text=/Mbps/').allTextContents();
@@ -179,7 +183,11 @@ test.describe('Mweb Fibre Pricing Verification - June 2025 Updates', () => {
     await page.waitForSelector('text=/R[0-9,]+pm/', { timeout: 30000 });
     console.log('✅ Pricing content loaded');
     
-    await page.screenshot({ path: 'zoom-pricing-verification.png', fullPage: true });
+    await page.screenshot({ 
+      path: 'zoom-pricing-verification.png', 
+      fullPage: true,
+      animations: 'disabled'
+    });
     
     // Debug: Show all text that contains Mbps
     const allMbpsText = await page.locator('text=/Mbps/').allTextContents();
