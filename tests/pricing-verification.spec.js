@@ -100,13 +100,24 @@ test.describe('Mweb Fibre Pricing Verification - June 2025 Updates', () => {
     for (const expected of expectedPricing) {
       console.log(`\n📦 Checking ${expected.package}...`);
       
-      // Look for the package speed (try exact format first, then fallback to speed only)
+      // Look for the package speed (try exact format first, then fallback approaches)
       let packageLocator = page.getByText(expected.package);
+      let searchUsed = expected.package;
+      
       if (await packageLocator.count() === 0) {
-        // Fallback: try to find just the speed part (e.g., "20Mbps" from "20↑20Mbps")
-        const speedOnly = expected.package.split('↑')[0] + 'Mbps';
-        packageLocator = page.getByText(speedOnly);
-        console.log(`  🔍 Fallback search for: ${speedOnly}`);
+        // Fallback 1: try to find just the download speed (e.g., "20Mbps" from "20↑20Mbps")
+        const downloadSpeed = expected.package.split('↑')[0];
+        if (downloadSpeed.includes('Gbps')) {
+          // For Gbps packages, search for just "1Gbps" etc.
+          packageLocator = page.getByText(downloadSpeed);
+          searchUsed = downloadSpeed;
+        } else {
+          // For Mbps packages, add "Mbps" if not present
+          const speedOnly = downloadSpeed.includes('Mbps') ? downloadSpeed : downloadSpeed + 'Mbps';
+          packageLocator = page.getByText(speedOnly);
+          searchUsed = speedOnly;
+        }
+        console.log(`  🔍 Fallback search for: ${searchUsed}`);
       }
       
       if (await packageLocator.count() > 0) {
