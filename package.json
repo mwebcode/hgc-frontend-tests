@@ -1,0 +1,21 @@
+{
+  "name": "hgc-frontend-tests",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:prod": "playwright test --project=prod-chrome",
+    "test:dev": "playwright test --project=dev-chrome",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "report": "playwright show-report"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@playwright/mcp": "^0.0.27",
+    "@playwright/test": "^1.52.0"
+  }
+}

@@ -1,0 +1,107 @@
+Product Configuration Id: 400485
+Product Code: TELKOM-LTE-12-5GB-SIM-JUNE25
+Description: Telkom LTE 12,5GB + 12,5GB Night Time Data
+Charge: 4007793
+Charge Rate: R125.00
+ 
+Product Configuration Id: 4004859
+Product Code: TELKOM-LTE-22-5GB-SIM-JUNE25
+Description: Telkom LTE 22,5GB + 22,5GB Night Time Data
+Charge: 4007794
+Charge Rate: R165.00
+ 
+Product Configuration Id: 4004860
+Product Code: TELKOM-LTE-40GB-SIM-JUNE25
+Description: Telkom LTE 40GB + 40GB Night Time Data
+Charge: 4007795
+Charge Rate: R199.00
+ 
+Product Configuration Id: 4004861
+Product Code: TELKOM-LTE-40GB-JUNE25
+Description: Telkom LTE 40GB + 40GB Night Time Data
+Charge: 4007796
+Charge Rate: R199.00
+ 
+Product Configuration Id: 4004862
+Product Code: TELKOM-LTE-80GB-SIM-JUNE25
+Description: Telkom LTE 80GB + 80GB Night Time Data
+Charge: 4007797         
+Charge Rate: R249.00
+ 
+Product Configuration Id: 4004863
+Product Code: TELKOM-LTE-80GB-JUNE25
+Description: Telkom LTE 80GB + 80GB Night Time Data
+Charge: 4007798
+Charge Rate: R249.00
+ 
+Product Configuration Id: 4004864
+Product Code: TELKOM-LTE-120GB-JUNE25
+Description: Telkom LTE 120GB + 120GB Night Time Data
+Charge: 4007799
+Charge Rate: R299.00
+ 
+Product Configuration Id: 4004865
+Product Code: TELKOM-LTE-120GB-SIM-JUNE25
+Description: Telkom LTE 120GB + 120GB Night Time Data
+Charge: 4007800
+Charge Rate: R299.00
+ 
+Product Configuration Id: 4004866
+Product Code: TELKOM-LTE-180GB-JUNE25
+Description: Telkom LTE 180GB + 180GB Night Time Data
+Charge: 4007801
+Charge Rate: R409.00
+ 
+Product Configuration Id: 4004867
+Product Code: TELKOM-LTE-180GB-SIM-JUNE25
+Description: Telkom LTE 180GB + 180GB Night Time Data
+Charge: 4007802
+Charge Rate: R409.00
+ 
+Product Configuration Id: 4004868
+Product Code: TELKOM-LTE-120GB-MIFI-JUNE25
+Description: Telkom LTE 120GB + 120GB Night Time Data
+Charge: 4007803
+Charge Rate: R299.00
+ 
+Product Configuration Id: 4004869
+Product Code: TELKOM-LTE-180GB-MIFI-JUNE25
+Description: Telkom LTE 180GB + 180GB Night Time Data
+Charge: 4007804
+Charge Rate: R409.00
+ 
+Product Configuration Id: 4004870
+Product Code: TELKOM-LTE-2TB-JUNE25
+Description: Telkom LTE 2TB
+Charge: 4007805         
+Charge Rate: R779.00
+ 
+Product Configuration Id: 4004871
+Product Code: TELKOM-LTE-2TB-ROUTER-JUNE25
+Description: Telkom LTE 2TB
+Charge: 4007806
+Charge Rate: R779.00
+ 
+Product Configuration Id: 4004872
+Product Code: TELKOM-LTE-UNC-20MBPS-JUNE25
+Description: Telkom LTE 20Mbps Uncapped
+Charge: 4007807
+Charge Rate: R549.00
+ 
+Product Configuration Id: 4004873
+Product Code: TELKOM-LTE-UNC-20MBPS-SIM-JUNE25
+Description: Telkom LTE 20Mbps Uncapped
+Charge: 4007808
+Charge Rate: R549.00
+ 
+Product Configuration Id: 4004874
+Product Code: TELKOM-LTE-UNC-30MBPS-JUNE25
+Description: Telkom LTE 30Mbps Uncapped
+Charge: 4007809
+Charge Rate: R699.00
+ 
+Product Configuration Id: 4004875
+Product Code: TELKOM-LTE-UNC-30MBPS-SIM-JUNE25
+Description: Telkom LTE 30Mbps Uncapped
+Charge: 4007810         
+Charge Rate: R699.00
