@@ -1,0 +1,282 @@
+name: Frontend Tests
+
+on:
+  schedule:
+    # Run tests daily at 6 AM UTC (8 AM CAT)
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      brand:
+        description: 'Brand to test'
+        required: true
+        default: 'mweb'
+        type: choice
+        options:
+          - mweb
+          - webafrica
+      environment:
+        description: 'Environment to test'
+        required: true
+        default: 'prod'
+        type: choice
+        options:
+          - prod
+          - staging
+          - dev
+      runId:
+        description: 'Custom run ID (auto-generated if not provided)'
+        required: false
+        type: string
+      triggeredBy:
+        description: 'Who/what triggered this run'
+        required: false
+        default: 'manual'
+        type: string
+
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.FRONTEND_TESTS_AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.FRONTEND_TESTS_AWS_SECRET_ACCESS_KEY }}
+  AWS_DEFAULT_REGION: ${{ secrets.FRONTEND_TESTS_AWS_DEFAULT_REGION }}
+  AWS_S3_BUCKET: ${{ secrets.FRONTEND_TESTS_AWS_S3_BUCKET }}
+  AWS_DYNAMODB_TABLE: ${{ secrets.FRONTEND_TESTS_AWS_DYNAMODB_TABLE }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        brand: ${{ github.event.inputs.brand && fromJSON(format('["{0}"]', github.event.inputs.brand)) || fromJSON('["mweb", "webafrica"]') }}
+        environment: ${{ github.event.inputs.environment && fromJSON(format('["{0}"]', github.event.inputs.environment)) || fromJSON('["prod"]') }}
+      fail-fast: false
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Generate run metadata
+        id: metadata
+        run: |
+          # Use provided runId or generate one
+          if [ -n "${{ github.event.inputs.runId }}" ]; then
+            RUN_ID="${{ github.event.inputs.runId }}"
+          else
+            RUN_ID="${{ github.run_id }}-${{ github.run_attempt }}-$(date +%s)"
+          fi
+          
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          TIMESTAMP_S3=$(date -u +"%Y%m%d_%H%M%S")
+          
+          echo "run_id=${RUN_ID}" >> $GITHUB_OUTPUT
+          echo "timestamp=${TIMESTAMP}" >> $GITHUB_OUTPUT
+          echo "timestamp_s3=${TIMESTAMP_S3}" >> $GITHUB_OUTPUT
+          echo "brand=${{ matrix.brand }}" >> $GITHUB_OUTPUT
+          echo "environment=${{ matrix.environment }}" >> $GITHUB_OUTPUT
+
+      - name: Create test metadata file
+        run: |
+          cat > test-metadata.json <<EOF
+          {
+            "runId": "${{ steps.metadata.outputs.run_id }}",
+            "brand": "${{ steps.metadata.outputs.brand }}",
+            "environment": "${{ steps.metadata.outputs.environment }}",
+            "timestamp": "${{ steps.metadata.outputs.timestamp }}",
+            "commit": "${{ github.sha }}",
+            "status": "running",
+            "actor": "${{ github.actor }}",
+            "workflow": "${{ github.workflow }}",
+            "repository": "${{ github.repository }}",
+            "githubRunId": "${{ github.run_id }}",
+            "runNumber": "${{ github.run_number }}",
+            "triggeredBy": "${{ github.event.inputs.triggeredBy || 'scheduled' }}"
+          }
+          EOF
+
+      - name: Store initial run metadata in DynamoDB
+        run: |
+          aws dynamodb put-item \
+            --table-name "${AWS_DYNAMODB_TABLE}" \
+            --item '{
+              "pk": {"S": "BRAND#${{ steps.metadata.outputs.brand }}"},
+              "sk": {"S": "RUN#${{ steps.metadata.outputs.timestamp }}#${{ steps.metadata.outputs.run_id }}"},
+              "gsi1pk": {"S": "STATUS#running"},
+              "gsi1sk": {"S": "TIMESTAMP#${{ steps.metadata.outputs.timestamp }}"},
+              "runId": {"S": "${{ steps.metadata.outputs.run_id }}"},
+              "brand": {"S": "${{ steps.metadata.outputs.brand }}"},
+              "environment": {"S": "${{ steps.metadata.outputs.environment }}"},
+              "status": {"S": "running"},
+              "timestamp": {"S": "${{ steps.metadata.outputs.timestamp }}"},
+              "githubRunId": {"S": "${{ github.run_id }}"},
+              "commit": {"S": "${{ github.sha }}"},
+              "actor": {"S": "${{ github.actor }}"},
+              "workflow": {"S": "${{ github.workflow }}"},
+              "repository": {"S": "${{ github.repository }}"},
+              "runNumber": {"N": "${{ github.run_number }}"},
+              "triggeredBy": {"S": "${{ github.event.inputs.triggeredBy || 'scheduled' }}"},
+              "ttl": {"N": "'$(date -d "+90 days" +%s)'"}
+            }'
+
+      - name: Run Playwright tests
+        id: tests
+        run: |
+          # Run tests for the specific brand and environment
+          npx playwright test brands/${{ matrix.brand }}/tests/ \
+            --project=chrome \
+            --reporter=html,json \
+            --output-dir=test-results/${{ matrix.brand }} \
+            || TEST_EXIT_CODE=$?
+          
+          # Capture test results even if tests failed
+          if [ -f test-results.json ]; then
+            TOTAL=$(jq '.stats.total // 0' test-results.json)
+            PASSED=$(jq '.stats.passed // 0' test-results.json)
+            FAILED=$(jq '.stats.failed // 0' test-results.json)
+            SKIPPED=$(jq '.stats.skipped // 0' test-results.json)
+            
+            echo "tests_total=${TOTAL}" >> $GITHUB_OUTPUT
+            echo "tests_passed=${PASSED}" >> $GITHUB_OUTPUT
+            echo "tests_failed=${FAILED}" >> $GITHUB_OUTPUT
+            echo "tests_skipped=${SKIPPED}" >> $GITHUB_OUTPUT
+          else
+            echo "tests_total=0" >> $GITHUB_OUTPUT
+            echo "tests_passed=0" >> $GITHUB_OUTPUT
+            echo "tests_failed=0" >> $GITHUB_OUTPUT
+            echo "tests_skipped=0" >> $GITHUB_OUTPUT
+          fi
+          
+          # Set exit code for later use
+          echo "test_exit_code=${TEST_EXIT_CODE:-0}" >> $GITHUB_OUTPUT
+          
+          # Don't fail the workflow here - we want to upload results
+          exit 0
+
+      - name: Upload results to S3
+        if: always()
+        run: |
+          BRAND="${{ steps.metadata.outputs.brand }}"
+          ENV="${{ steps.metadata.outputs.environment }}"
+          TIMESTAMP="${{ steps.metadata.outputs.timestamp_s3 }}"
+          PREFIX="${BRAND}/${ENV}/${TIMESTAMP}"
+          
+          # Upload HTML report
+          if [ -d "playwright-report" ]; then
+            echo "Uploading HTML report..."
+            aws s3 cp playwright-report/ "s3://${AWS_S3_BUCKET}/reports/${PREFIX}/" --recursive
+            echo "HTML report uploaded to: s3://${AWS_S3_BUCKET}/reports/${PREFIX}/"
+          fi
+          
+          # Upload artifacts (screenshots, videos, traces)
+          if [ -d "test-results" ]; then
+            echo "Uploading test artifacts..."
+            aws s3 cp test-results/ "s3://${AWS_S3_BUCKET}/artifacts/${PREFIX}/" --recursive
+            echo "Test artifacts uploaded to: s3://${AWS_S3_BUCKET}/artifacts/${PREFIX}/"
+          fi
+          
+          # Update metadata with test results
+          if [ -f test-results.json ]; then
+            jq --arg total "${{ steps.tests.outputs.tests_total }}" \
+               --arg passed "${{ steps.tests.outputs.tests_passed }}" \
+               --arg failed "${{ steps.tests.outputs.tests_failed }}" \
+               --arg skipped "${{ steps.tests.outputs.tests_skipped }}" \
+               '. + {
+                 "tests": {
+                   "total": ($total | tonumber),
+                   "passed": ($passed | tonumber),
+                   "failed": ($failed | tonumber),
+                   "skipped": ($skipped | tonumber)
+                 },
+                 "reportUrl": "s3://'${AWS_S3_BUCKET}'/reports/'${PREFIX}'/index.html"
+               }' test-metadata.json > updated-metadata.json
+            mv updated-metadata.json test-metadata.json
+          fi
+          
+          # Upload metadata
+          aws s3 cp test-metadata.json "s3://${AWS_S3_BUCKET}/metadata/${PREFIX}/metadata.json"
+          echo "Metadata uploaded to: s3://${AWS_S3_BUCKET}/metadata/${PREFIX}/metadata.json"
+
+      - name: Update DynamoDB with final results
+        if: always()
+        run: |
+          # Determine final status
+          if [ "${{ steps.tests.outputs.test_exit_code }}" = "0" ]; then
+            FINAL_STATUS="passed"
+          else
+            FINAL_STATUS="failed"
+          fi
+          
+          # Calculate duration
+          START_TIME=$(date -d "${{ steps.metadata.outputs.timestamp }}" +%s)
+          END_TIME=$(date +%s)
+          DURATION=$((END_TIME - START_TIME))
+          
+          # Update DynamoDB record
+          aws dynamodb update-item \
+            --table-name "${AWS_DYNAMODB_TABLE}" \
+            --key '{
+              "pk": {"S": "BRAND#${{ steps.metadata.outputs.brand }}"},
+              "sk": {"S": "RUN#${{ steps.metadata.outputs.timestamp }}#${{ steps.metadata.outputs.run_id }}"}
+            }' \
+            --update-expression "SET #status = :status, gsi1pk = :gsi1pk, #duration = :duration, tests = :tests, reportUrl = :reportUrl, updatedAt = :updatedAt" \
+            --expression-attribute-names '{
+              "#status": "status",
+              "#duration": "duration"
+            }' \
+            --expression-attribute-values '{
+              ":status": {"S": "'${FINAL_STATUS}'"},
+              ":gsi1pk": {"S": "STATUS#'${FINAL_STATUS}'"},
+              ":duration": {"N": "'${DURATION}'"},
+              ":tests": {
+                "M": {
+                  "total": {"N": "${{ steps.tests.outputs.tests_total }}"},
+                  "passed": {"N": "${{ steps.tests.outputs.tests_passed }}"},
+                  "failed": {"N": "${{ steps.tests.outputs.tests_failed }}"},
+                  "skipped": {"N": "${{ steps.tests.outputs.tests_skipped }}"}
+                }
+              },
+              ":reportUrl": {"S": "s3://'${AWS_S3_BUCKET}'/reports/${{ steps.metadata.outputs.brand }}/${{ steps.metadata.outputs.environment }}/${{ steps.metadata.outputs.timestamp_s3 }}/index.html"},
+              ":updatedAt": {"S": "'$(date -u +"%Y-%m-%dT%H:%M:%SZ")'"}
+            }'
+
+      - name: Upload Playwright Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report-${{ matrix.brand }}-${{ matrix.environment }}
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.brand }}-${{ matrix.environment }}
+          path: test-results/
+          retention-days: 30
+
+      - name: Fail job if tests failed
+        if: steps.tests.outputs.test_exit_code != '0'
+        run: |
+          echo "Tests failed with exit code ${{ steps.tests.outputs.test_exit_code }}"
+          exit ${{ steps.tests.outputs.test_exit_code }}
+
+  notify:
+    runs-on: ubuntu-latest
+    needs: test
+    if: always()
+    steps:
+      - name: Notify completion
+        run: |
+          echo "All test jobs completed"
+          echo "Results have been uploaded to S3 and stored in DynamoDB"
+          echo "Check the infrastructure API for detailed results"
