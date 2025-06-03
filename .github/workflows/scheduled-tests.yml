@@ -131,10 +131,9 @@ jobs:
         id: tests
         run: |
           # Run tests for the specific brand and environment
-          npx playwright test brands/${{ matrix.brand }}/tests/ \
-            --project=chrome \
+          npx playwright test \
+            --project=${{ matrix.brand }}-${{ matrix.environment }}-chrome \
             --reporter=html,json \
-            --output-dir=test-results/${{ matrix.brand }} \
             || TEST_EXIT_CODE=$?
           
           # Capture test results even if tests failed
@@ -143,6 +142,15 @@ jobs:
             PASSED=$(jq '.stats.passed // 0' test-results.json)
             FAILED=$(jq '.stats.failed // 0' test-results.json)
             SKIPPED=$(jq '.stats.skipped // 0' test-results.json)
+            echo "tests_total=${TOTAL}" >> $GITHUB_OUTPUT
+            echo "tests_passed=${PASSED}" >> $GITHUB_OUTPUT
+            echo "tests_failed=${FAILED}" >> $GITHUB_OUTPUT
+            echo "tests_skipped=${SKIPPED}" >> $GITHUB_OUTPUT
+          elif [ -f results.json ]; then
+            TOTAL=$(jq '.stats.total // 0' results.json)
+            PASSED=$(jq '.stats.passed // 0' results.json)
+            FAILED=$(jq '.stats.failed // 0' results.json)
+            SKIPPED=$(jq '.stats.skipped // 0' results.json)
             
             echo "tests_total=${TOTAL}" >> $GITHUB_OUTPUT
             echo "tests_passed=${PASSED}" >> $GITHUB_OUTPUT
